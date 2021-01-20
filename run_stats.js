@@ -25,8 +25,9 @@ let lowestMinStake = NaN;
 // let lowestNonZeroMinStake = NaN;
 let lowestMinNominator = "no one";
 
+let stats = {};
 let body  = "";
-let summary = "";
+let summary = {};
 
 (async () => {
   args = process.argv
@@ -151,36 +152,86 @@ let summary = "";
   }
 
 
-  summary += ("\nSummary Data:\n")
-  summary += (`\tTotal ${getSuffix()}: ${totalKSM / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-  summary += (`\tBonding Stake: ${totalBondingStake.toString() / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-  summary += (`\tStaking Rate: ${totalBondingStake.toString() / totalKSM * 100} %\n`)
-  summary += (`\tTotal Number of Unique Nominators: ${uniqueNominators.size}\n`)
+  // summary += ("\nSummary Data:\n")
+  // summary += (`\tTotal ${getSuffix()}: ${totalKSM / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+  summary['Total ' + getSuffix()] = `${totalKSM / DOT_DECIMAL_PLACES} ${getSuffix()}`;
+  // summary += (`\tBonding Stake: ${totalBondingStake.toString() / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+  summary['Bonding Stake'] = `${totalBondingStake.toString() / DOT_DECIMAL_PLACES} ${getSuffix()}`;
+  // summary += (`\tStaking Rate: ${totalBondingStake.toString() / totalKSM * 100} %\n`)
+  summary['Staking Rate'] = `${totalBondingStake.toString() / totalKSM * 100} %`;
+  // summary += (`\tTotal Number of Unique Nominators: ${uniqueNominators.size}\n`)
+  summary['Unique Nominators'] = uniqueNominators.size;
 
-  summary += (`\tHighest-staked validator: ${highest} : ${highestAmount} ${getSuffix()}\n`)
-  summary += (`\tLowest-staked validator: ${lowest} : ${lowestAmount} ${getSuffix()}\n`)
-  summary += (`\tLowest-staked(non-zero) validator: ${lowestNonZeroValidator} : ${lowestNonZeroAmount} ${getSuffix()}\n`)
-  summary += (`\tHighest commission validator: ${highestCommission} : ${highestCommissionAmount / 10000000} % \n`)
-  summary += (`\tLowest commission validator: ${lowestCommission} : ${lowestCommissionAmount / 10000000} %\n`)
+  // summary += (`\tHighest-staked validator: ${highest} : ${highestAmount} ${getSuffix()}\n`)
+  validatorStats = {}
 
-  // part 3
-  summary += (`\tLowest Minimal Nominator: ${lowestMinNominator} : ${lowestMinStake / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-  // summary += (`Lowest Non-Zero Minimal Nominator: ${lowestNonZeroMinNominator} : ${lowestNonZeroMinStake / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-  summary += (`\tHighest Minimal Nominator: ${highestMinNominator} : ${highestMinAmount / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-  summary += (`\tHighest Minimal Nominator(non 100% commission validators): ${highestMinNominatorNon100} : ${highestMinAmountNon100 / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-  summary += (`\tAverage Minimal Nomination: ${averageMinNomination / DOT_DECIMAL_PLACES} ${getSuffix()}\n`);
-  summary += (`\tAverage Minimal Nomination (Among Non 100% Commission Validators): ${averageMinNominationNon100 / DOT_DECIMAL_PLACES} ${getSuffix()}\n`);
+  highValidator = {}
+  highValidator['addr'] = highest
+  highValidator['value'] = highestAmount
+  validatorStats['Highest Staked Validator'] = highValidator
+
+  // summary += (`\tLowest-staked validator: ${lowest} : ${lowestAmount} ${getSuffix()}\n`)
+  lowValidator = {}
+  lowValidator['addr'] = lowest
+  lowValidator['value'] = lowestAmount
+  validatorStats['Lowest Staked Validator'] = lowValidator
+
+  // summary += (`\tLowest-staked(non-zero) validator: ${lowestNonZeroValidator} : ${lowestNonZeroAmount} ${getSuffix()}\n`)
+  lowValidatorNZ = {}
+  lowValidatorNZ['addr'] = lowestNonZeroValidator
+  lowValidatorNZ['value'] = lowestNonZeroAmount
+  validatorStats['Lowest Staked(non-zero) Validator'] = lowValidatorNZ
+  // summary += (`\tHighest commission validator: ${highestCommission} : ${highestCommissionAmount / 10000000} % \n`)
+  highValidatorComm = {}
+  highValidatorComm['addr'] = highestCommission
+  highValidatorComm['value'] = `${highestCommissionAmount / 10000000} %`
+  validatorStats['Highest Commission Validator'] = highValidatorComm
+  // summary += (`\tLowest commission validator: ${lowestCommission} : ${lowestCommissionAmount / 10000000} %\n`)
+  lowValidatorComm = {}
+  lowValidatorComm['addr'] = lowestCommission
+  lowValidatorComm['value'] = `${lowestCommissionAmount / 10000000} %`
+  validatorStats['Lowest Commission Validator'] = lowValidatorComm
+
+  summary['Validator Stats'] = validatorStats
+  // // part 3
+  nominatorStats = {}
+  
+  // summary += (`\tLowest Minimal Nominator: ${lowestMinNominator} : ${lowestMinStake / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+  lowMinNominator = {}
+  lowMinNominator['addr'] = lowestMinNominator
+  lowMinNominator['value'] = lowestMinStake / DOT_DECIMAL_PLACES
+  nominatorStats['Lowest Minimal Nominator'] = lowMinNominator
+  // // summary += (`Lowest Non-Zero Minimal Nominator: ${lowestNonZeroMinNominator} : ${lowestNonZeroMinStake / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+  // summary += (`\tHighest Minimal Nominator: ${highestMinNominator} : ${highestMinAmount / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+  highMinNominator = {}
+  highMinNominator['addr'] = highestMinNominator
+  highMinNominator['value'] = highestMinAmount / DOT_DECIMAL_PLACES
+  nominatorStats['Highest Minimal Nominator'] = highMinNominator
+  // summary += (`\tHighest Minimal Nominator(non 100% commission validators): ${highestMinNominatorNon100} : ${highestMinAmountNon100 / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+  highMinNominatorNon100 = {}
+  highMinNominatorNon100['addr'] = highestMinNominatorNon100
+  highMinNominatorNon100['value'] = highestMinAmountNon100 / DOT_DECIMAL_PLACES
+  nominatorStats['Highest Minimal Nominator(among non 100% commission validators'] = highMinNominatorNon100
+  // summary += (`\tAverage Minimal Nomination: ${averageMinNomination / DOT_DECIMAL_PLACES} ${getSuffix()}\n`);
+  nominatorStats['Average Minimal Nomination'] = averageMinNomination / DOT_DECIMAL_PLACES
+  // summary += (`\tAverage Minimal Nomination (Among Non 100% Commission Validators): ${averageMinNominationNon100 / DOT_DECIMAL_PLACES} ${getSuffix()}\n`);
+  nominatorStats['Average Minimal Nomination (among non 100% commission validators)'] = averageMinNominationNon100 / DOT_DECIMAL_PLACES
+
+  summary['Nominator Stats'] = nominatorStats
+  // // part 4
+  // summary += (`\tAverage Stake Per Validator: ${averageTotalStake} ${getSuffix()}\n`)
+  summary['Average Stake Per Validator'] = averageTotalStake
+  // summary += (`\tAverage Commission: ${averageCommission / 10000000} %\n`)
+  summary['Average Commission'] = `${averageCommission / 10000000} %`
+  // summary += (`\tAverage Stake (Among Non 100% Commission Validators): ${averageStakeNon100} ${getSuffix()}\n`)
+  summary['Average Stake (among non 100% commission validators'] = averageStakeNon100
+  // summary += (`\tAverage Commission (Among Non 100% Commission Validators): ${averageCommissionNon100} %\n`)
+  summary['Average Commission (among non 100% commission validators'] = `${averageCommissionNon100} %`
+
+  stats['Summary'] = summary
 
 
-  // part 4
-  summary += (`\tAverage Stake Per Validator: ${averageTotalStake} ${getSuffix()}\n`)
-  summary += (`\tAverage Commission: ${averageCommission / 10000000} %\n`)
-  summary += (`\tAverage Stake (Among Non 100% Commission Validators): ${averageStakeNon100} ${getSuffix()}\n`)
-  summary += (`\tAverage Commission (Among Non 100% Commission Validators): ${averageCommissionNon100} %\n`)
-
-
-  console.log(body)
-  console.log(summary)
+  console.log(stats)
   process.exit()
 })()
 

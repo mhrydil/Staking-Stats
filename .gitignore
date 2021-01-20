@@ -1,3 +1,5 @@
 service_account_keys
 node_modules
 package-lock.json
+*.txt
+
