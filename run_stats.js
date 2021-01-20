@@ -26,20 +26,20 @@ let lowestMinStake = NaN;
 let lowestMinNominator = "no one";
 
 let stats = {};
-let body  = "";
+let body  = {};
 let summary = {};
 
 (async () => {
   args = process.argv
   let provider = null;
   if (args.length > 2 && args[2] === 'kusama') { // if there is a command line arg for kusama, use kusama network
-    body  += 'Connecting to Kusama'
+    body['network'] = 'Kusama'
     network = 'kusama'
     provider = new WsProvider('wss://kusama-rpc.polkadot.io')
     DOT_DECIMAL_PLACES *= 100
   }
   else { // default to polkadot
-    body  += 'Connecting to Polkadot'
+    body['network'] = 'Polkadot'
     provider = new WsProvider('wss://rpc.polkadot.io')
   }
   const api = await ApiPromise.create({ provider })
@@ -73,6 +73,8 @@ let summary = {};
 
   }
 
+  let validatorList = []
+
 
   for (let i = 0; i < currentValidators.length; i++) {
     const validatorStake = await api.query.staking.erasStakers(currentEra.toString(), currentValidators[i])
@@ -83,7 +85,10 @@ let summary = {};
 
     check(currentValidators[i].toString(), parseInt(validatorTotalStake), parseInt(validatorCommissionRate['commission'].toString()))
 
-    body  += (`Stash Address: ${currentValidators[i].toString()}.\n\tTotal stake: ${validatorTotalStake}\n\tSelf stake: ${validatorOwnStake} ${getSuffix()}\n`)
+    let thisValidator = {}
+    thisValidator['Stash Address'] = currentValidators[i].toString()
+    thisValidator['Total Stake'] = validatorTotalStake
+    thisValidator['Self Stake'] = validatorOwnStake
 
     averageTotalStake += validatorTotalStake / currentValidators.length;
     averageCommission += parseInt(validatorCommissionRate['commission'].toString()) / currentValidators.length;
@@ -99,8 +104,14 @@ let summary = {};
     let minNominator = "no one";
     let maxNominator = "no one";
     let avg = 0;
+    
+    let nominatorList = []
+
     for (let j = 0; j < validatorNominators.length; j++) {
-      body  += (`\tAddress: ${validatorNominators[j].who}, Stake: ${validatorNominators[j].value / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+      let thisNominator = {}
+      thisNominator['Address'] = validatorNominators[j].who
+      thisNominator['Stake'] = validatorNominators[j].value / DOT_DECIMAL_PLACES
+      nominatorList.push(thisNominator)
       if(isNaN(max)) {
         min = max = validatorNominators[j].value;
         minNominator = maxNominator = validatorNominators[j].who;
@@ -118,6 +129,8 @@ let summary = {};
       uniqueNominators.add(validatorNominators[j].who);
       avg += (validatorNominators[j].value / validatorNominators.length);
     }
+    
+    thisValidator['Nominators'] = nominatorList
 
 
 
@@ -141,19 +154,27 @@ let summary = {};
         averageMinNominationNon100 += min/countNon100;
       }
     }
+    thisValidator['Commission'] = `${ validatorCommissionRate['commission'].toString() / 10000000 } %`
+    thisValidator['Nominator Count'] = validatorNominators.length
+    let minNominatorDict = {}
+    minNominatorDict['Address'] = minNominator
+    minNominatorDict['Stake'] = min / DOT_DECIMAL_PLACES
+    thisValidator['Min Nominator'] = minNominatorDict
+    let maxNominatorDict = {}
+    maxNominatorDict['Address'] = maxNominator
+    maxNominatorDict['Stake'] = max / DOT_DECIMAL_PLACES
+    thisValidator['Max Nominator'] = maxNominatorDict
+    thisValidator['Average Stake'] = avg / DOT_DECIMAL_PLACES
 
-    body  += (`\tCommission: ${validatorCommissionRate['commission'].toString() / 10000000} %\n`)
-    body  += (`\tNominators: ${validatorNominators.length}\n`)
-    body  += (`\tMin Nominator: ${minNominator} : ${min / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-    body  += (`\tMax Nominator: ${maxNominator} : ${max / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-    // body  += ('\tMaximum Stake:', max / DOT_DECIMAL_PLACES, getSuffix())
-    // body  += ('\tMinimum Stake:', min / DOT_DECIMAL_PLACES, getSuffix())
-    body  += (`\tAverage Nominator Stake: ${avg / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+    validatorList.push(thisValidator)
   }
+
+  body['Validators'] = validatorList
 
 
   // summary += ("\nSummary Data:\n")
   // summary += (`\tTotal ${getSuffix()}: ${totalKSM / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
+  summary['Era'] = currentEra
   summary['Total ' + getSuffix()] = `${totalKSM / DOT_DECIMAL_PLACES} ${getSuffix()}`;
   // summary += (`\tBonding Stake: ${totalBondingStake.toString() / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
   summary['Bonding Stake'] = `${totalBondingStake.toString() / DOT_DECIMAL_PLACES} ${getSuffix()}`;
@@ -228,10 +249,9 @@ let summary = {};
   // summary += (`\tAverage Commission (Among Non 100% Commission Validators): ${averageCommissionNon100} %\n`)
   summary['Average Commission (among non 100% commission validators'] = `${averageCommissionNon100} %`
 
+  stats['Body'] = body
   stats['Summary'] = summary
-
-
-  console.log(stats)
+  console.log(JSON.stringify(stats, null, '\t'))
   process.exit()
 })()
 
