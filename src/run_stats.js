@@ -26,24 +26,24 @@ let lowestMinStake = NaN;
 let lowestMinNominator = "no one";
 
 let stats = {};
-let body  = {};
+let details  = {};
 let summary = {};
 
-(async () => {
+async function run_test() {
   args = process.argv
   let provider = null;
   if (args.length > 2 && args[2] === 'kusama') { // if there is a command line arg for kusama, use kusama network
-    body['network'] = 'Kusama'
+    details['network'] = 'Kusama'
     network = 'kusama'
     provider = new WsProvider('wss://kusama-rpc.polkadot.io')
     DOT_DECIMAL_PLACES *= 100
   }
   else { // default to polkadot
-    body['network'] = 'Polkadot'
+    details['network'] = 'Polkadot'
     provider = new WsProvider('wss://rpc.polkadot.io')
   }
   const api = await ApiPromise.create({ provider })
-  const [currentValidators, totalIssuance, currentEra] = await Promise.all([
+  const[currentValidators, totalIssuance, currentEra] = await Promise.all([
     api.query.session.validators(),
     api.query.balances.totalIssuance(),
     api.query.staking.currentEra(),
@@ -169,12 +169,12 @@ let summary = {};
     validatorList.push(thisValidator)
   }
 
-  body['Validators'] = validatorList
+  details['Validators'] = validatorList
 
 
   // summary += ("\nSummary Data:\n")
   // summary += (`\tTotal ${getSuffix()}: ${totalKSM / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
-  summary['Era'] = currentEra
+  summary['Era'] = "" + currentEra;
   summary['Total ' + getSuffix()] = `${totalKSM / DOT_DECIMAL_PLACES} ${getSuffix()}`;
   // summary += (`\tBonding Stake: ${totalBondingStake.toString() / DOT_DECIMAL_PLACES} ${getSuffix()}\n`)
   summary['Bonding Stake'] = `${totalBondingStake.toString() / DOT_DECIMAL_PLACES} ${getSuffix()}`;
@@ -249,11 +249,50 @@ let summary = {};
   // summary += (`\tAverage Commission (Among Non 100% Commission Validators): ${averageCommissionNon100} %\n`)
   summary['Average Commission (among non 100% commission validators'] = `${averageCommissionNon100} %`
 
-  stats['Body'] = body
   stats['Summary'] = summary
-  console.log(JSON.stringify(stats, null, '\t'))
+  stats['Details'] = details
+  add_to_db(currentEra)
+}
+
+
+function test() {
+  console.log("Test")
+}
+
+
+
+/*
+  Database Access
+*/
+
+
+
+
+
+
+async function add_to_db(currentEra) {
+  const admin = require('firebase-admin');
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault()
+  });
+  const db = admin.firestore();
+  const res = await db.collection('stats').doc("" + currentEra).set(stats);
   process.exit()
-})()
+}
+
+async function get_test() {
+  let todays_date = get_date();
+  const todays_info = await db.collection('stats').doc(get_date()).get();
+  if (!todays_info) {
+    console.log('no file exists!')
+  }
+  else {
+    console.log(JSON.stringify(todays_info.data(), null, '\t'))
+  }
+}
+
+
+
 
 
 const checkNon100 = (stake, currentNominator) => {

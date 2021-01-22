@@ -18,15 +18,26 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-async function test() {
+async function add_test() {
     let todays_date = get_date();
     const data = {
         date: todays_date,
-        stats: 'test stats',
+        stats: 'test statsssss',
     };
 
-    // Add a new document in collection "cities" with ID 'LA'
     const res = await db.collection('stats').doc(get_date()).set(data);
 }
 
-test()
+async function get_test() {
+    let todays_date = get_date();
+    const todays_info = await db.collection('stats').doc(get_date()).get();
+    if(!todays_info) {
+        console.log('no file exists!')
+    }
+    else {
+        console.log(JSON.stringify(todays_info.data(), null, '\t'))
+    }
+}
+
+add_test()
+get_test()
